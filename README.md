@@ -5,30 +5,37 @@
 <h1 align="center">KiroNotebook</h1>
 
 <p align="center">
-  A desktop app demonstrating how to build on <a href="https://kiro.dev/docs/cli/acp/">Kiro CLI's Agent Client Protocol (ACP)</a>
+  Build AI-powered apps with <a href="https://kiro.dev/docs/cli/acp/">Kiro CLI</a> as your AI backend — via the Agent Client Protocol
 </p>
 
 <p align="center">
-  Built with <a href="https://v2.tauri.app">Tauri 2</a> · React · TypeScript · Rust
+  <a href="#english">English</a> · <a href="#中文">中文</a>
 </p>
 
 ---
 
-## Why This Project?
+<a id="english"></a>
 
-[Kiro CLI](https://kiro.dev/cli/) supports the [Agent Client Protocol (ACP)](https://agentclientprotocol.com/) — an open standard that lets any application integrate AI agent capabilities over a simple JSON-RPC 2.0 interface via stdio. This project is a working example of how to build a full-featured ACP client from scratch.
+## Using Kiro CLI as an AI SDK
 
-If you're looking to integrate Kiro's AI capabilities into your own editor, tool, or application, this codebase shows you exactly how.
+Most AI applications require managing API keys, model endpoints, token billing, and SDK dependencies. **Kiro CLI changes this** — it exposes a fully-featured AI agent through the [Agent Client Protocol (ACP)](https://agentclientprotocol.com/), a JSON-RPC 2.0 interface over stdio.
+
+This means you can:
+
+- **Use Kiro CLI as your AI backend** — no API keys to manage, no SDKs to install
+- **Build any kind of AI application** — desktop apps, CLI tools, editor plugins, automation scripts
+- **Get agent capabilities for free** — tool use, streaming, session persistence, model switching
+- **Work in any language** — anything that can spawn a process and read/write stdio (Rust, Python, Node.js, Go, etc.)
+
+KiroNotebook is a reference implementation showing this approach in action — a local NotebookLM-style app that uses Kiro CLI as its only AI dependency.
 
 ## ACP Integration Guide
 
 ### Spawning the ACP Server
 
-Kiro CLI acts as an ACP server. Spawn it as a child process and communicate over stdin/stdout:
-
 ```rust
-// Rust example (see src-tauri/src/acp.rs)
-let mut child = Command::new("kiro-cli")
+// Rust
+let child = Command::new("kiro-cli")
     .arg("acp")
     .stdin(Stdio::piped())
     .stdout(Stdio::piped())
@@ -36,7 +43,7 @@ let mut child = Command::new("kiro-cli")
 ```
 
 ```python
-# Python example (see temp/acp_01_new_session.py)
+# Python
 proc = subprocess.Popen(
     ["kiro-cli", "acp"],
     stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
@@ -45,30 +52,28 @@ proc = subprocess.Popen(
 
 ### Protocol Flow
 
-Every ACP interaction follows this sequence:
-
 ```
 Client                              kiro-cli acp
   │                                      │
   │──── initialize ─────────────────────▶│
-  │◀─── capabilities ───────────────────│
+  │◀─── capabilities ──────────────────│
   │                                      │
   │──── session/new ────────────────────▶│
   │◀─── { sessionId } ─────────────────│
   │                                      │
   │──── session/prompt ─────────────────▶│
-  │◀─── session/update (chunk) ─────────│  ← streaming
-  │◀─── session/update (chunk) ─────────│  ← streaming
+  │◀─── session/update (chunk) ─────────│  streaming
+  │◀─── session/update (chunk) ─────────│  streaming
   │◀─── session/update (turn_end) ──────│
   │◀─── response { stopReason } ────────│
   │                                      │
-  │──── session/cancel ─────────────────▶│  ← optional: interrupt
-  │──── session/set_model ──────────────▶│  ← optional: switch model
+  │──── session/cancel ─────────────────▶│  interrupt
+  │──── session/set_model ──────────────▶│  switch model
 ```
 
-### Key ACP Methods
+### Key Methods
 
-#### 1. Initialize — Handshake
+#### 1. Initialize
 
 ```json
 {"jsonrpc":"2.0","id":0,"method":"initialize","params":{
@@ -78,19 +83,16 @@ Client                              kiro-cli acp
 }}
 ```
 
-Response includes `agentCapabilities.loadSession: true` — meaning sessions can be persisted and restored.
-
-#### 2. Create a Session
+#### 2. Create Session
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"session/new","params":{
   "cwd":"/path/to/project",
   "mcpServers":[]
 }}
-// Response: { "sessionId": "uuid-here" }
 ```
 
-#### 3. Send a Prompt (Streaming)
+#### 3. Send Prompt (Streaming)
 
 ```json
 {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{
@@ -99,9 +101,7 @@ Response includes `agentCapabilities.loadSession: true` — meaning sessions can
 }}
 ```
 
-> ⚠️ The parameter is `prompt`, not `content`.
-
-Before the response arrives, you'll receive streaming notifications:
+Streaming notifications arrive before the final response:
 
 ```json
 {"jsonrpc":"2.0","method":"session/update","params":{
@@ -109,9 +109,9 @@ Before the response arrives, you'll receive streaming notifications:
 }}
 ```
 
-#### 4. Load a Previous Session
+#### 4. Load Previous Session
 
-Sessions are persisted at `~/.kiro/sessions/cli/`. You can restore them in a new process:
+Sessions persist at `~/.kiro/sessions/cli/`. Restore in a new process:
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"session/load","params":{
@@ -120,10 +120,6 @@ Sessions are persisted at `~/.kiro/sessions/cli/`. You can restore them in a new
   "mcpServers":[]
 }}
 ```
-
-The agent replays conversation history via `session/update` notifications, then the AI has full context of the previous conversation.
-
-> ⚠️ A session can only be loaded if no other process holds its lock file (`~/.kiro/sessions/cli/<id>.lock`).
 
 #### 5. Switch Model
 
@@ -134,9 +130,7 @@ The agent replays conversation history via `session/update` notifications, then 
 }}
 ```
 
-> ⚠️ The parameter is `modelId`, not `model`.
-
-Available models: `auto`, `claude-sonnet-4.6`, `claude-opus-4.6`, `claude-sonnet-4.5`, `claude-opus-4.5`, `claude-sonnet-4`, `claude-haiku-4.5`
+Available: `auto`, `claude-sonnet-4.6`, `claude-opus-4.6`, `claude-sonnet-4.5`, `claude-opus-4.5`, `claude-sonnet-4`, `claude-haiku-4.5`
 
 #### 6. Cancel Generation
 
@@ -146,49 +140,28 @@ Available models: `auto`, `claude-sonnet-4.6`, `claude-opus-4.6`, `claude-sonnet
 }}
 ```
 
-### Gotchas We Discovered
-
-| Issue | Detail |
-|-------|--------|
-| `prompt` not `content` | `session/prompt` params use `prompt` field, not `content` |
-| `modelId` not `model` | `session/set_model` params use `modelId` field |
-| Session locking | Each session has a `.lock` file; `session/load` fails if another process holds it |
-| Child process cleanup | `kiro-cli` spawns `kiro-cli-chat` as a child; you must kill the entire process group to release the lock |
-| Process group kill | On Unix, spawn with `process_group(0)` and kill with `kill(-pid, SIGTERM)` |
-
 ### Python Test Scripts
 
-The `temp/` directory contains standalone Python scripts for testing each ACP method:
+Standalone scripts for testing each ACP method — useful as reference implementations:
 
 ```bash
-# Test 1: Create session + send prompt
-uv run temp/acp_01_new_session.py
-
-# Test 2: Load a previous session in a new process
-uv run temp/acp_02_load_session.py
-
-# Test 3: Set model
-uv run temp/acp_03_set_model.py
-
-# Test 4: Streaming output with timing
-uv run temp/acp_04_streaming.py
+uv run temp/acp_01_new_session.py   # Create session + prompt
+uv run temp/acp_02_load_session.py  # Load previous session
+uv run temp/acp_03_set_model.py     # Switch model
+uv run temp/acp_04_streaming.py     # Streaming with timing
 ```
 
-These scripts are useful as reference implementations and for debugging ACP integration.
+## The App
 
-## The App Itself
-
-KiroNotebook is a local NotebookLM-style app — chat with AI about your documents without uploading anything.
-
-### Features
+KiroNotebook is a local NotebookLM — chat with AI about your documents without uploading anything.
 
 - **Three-panel layout** — File tree, document preview, AI chat
 - **Document support** — PDF, DOCX, Markdown, TXT, HTML
-- **Per-session ACP processes** — Each chat tab is an independent `kiro-cli acp` instance
-- **Context tracking** — Files sent to AI marked with ✓, new files queued until next message
-- **Session persistence** — History saved to `{workspace}/.kiro-notebook/`, restorable with full ACP context
+- **Per-session ACP processes** — Each chat tab runs its own `kiro-cli acp` instance
+- **Context tracking** — Sent files marked with ✓, new files queued until next message
+- **Session persistence** — Restorable with full ACP context via `session/load`
 - **Streaming + cancel** — Real-time responses, interruptible mid-generation
-- **Model switching** — All Kiro CLI models available from the toolbar
+- **Model switching** — All Kiro CLI models available
 
 ### Architecture
 
@@ -198,24 +171,11 @@ KiroNotebook is a local NotebookLM-style app — chat with AI about your documen
 │             │◀────│                  │◀────│  (per session)  │
 └─────────────┘     └──────────────────┘     └─────────────────┘
    Tauri events         invoke/commands        JSON-RPC stdio
-
-   • App.tsx            • acp.rs               • initialize
-   • App.css            • commands.rs          • session/new
-                        • file_reader.rs       • session/prompt
-                                               • session/load
-                                               • session/cancel
-                                               • session/set_model
 ```
 
 ## Getting Started
 
-### Prerequisites
-
-- [Kiro CLI](https://kiro.dev/downloads/) installed and authenticated (`kiro-cli --version`)
-- [Node.js](https://nodejs.org/) 18+
-- [Rust](https://rustup.rs/) toolchain
-
-### Run
+**Prerequisites:** [Kiro CLI](https://kiro.dev/downloads/) (authenticated), Node.js 18+, [Rust](https://rustup.rs/)
 
 ```bash
 git clone https://github.com/vokako/kiro-notebook.git
@@ -228,7 +188,6 @@ npm run tauri dev
 
 ```bash
 npm run tauri build -- --bundles app
-# Output: src-tauri/target/release/bundle/macos/KiroNotebook.app
 ```
 
 ## Further Reading
@@ -240,3 +199,81 @@ npm run tauri build -- --bundles app
 ## License
 
 MIT
+
+---
+
+<a id="中文"></a>
+
+## 中文文档
+
+### 把 Kiro CLI 当作 AI SDK 来用
+
+开发 AI 应用通常需要管理 API Key、模型端点、Token 计费和各种 SDK 依赖。**Kiro CLI 改变了这一切** — 它通过 [Agent Client Protocol (ACP)](https://agentclientprotocol.com/) 暴露了一个完整的 AI Agent 能力，基于 JSON-RPC 2.0 协议，通过 stdio 通信。
+
+这意味着你可以：
+
+- **把 Kiro CLI 作为 AI 后端** — 无需管理 API Key，无需安装 SDK
+- **构建任何类型的 AI 应用** — 桌面应用、CLI 工具、编辑器插件、自动化脚本
+- **免费获得 Agent 能力** — 工具调用、流式输出、会话持久化、模型切换
+- **使用任何编程语言** — 只要能启动子进程并读写 stdio（Rust、Python、Node.js、Go 等）
+
+KiroNotebook 是这种方案的参考实现 — 一个本地版 NotebookLM，唯一的 AI 依赖就是 Kiro CLI。
+
+### ACP 协议核心流程
+
+```
+客户端                               kiro-cli acp
+  │                                      │
+  │──── initialize（握手）──────────────▶│
+  │◀─── 返回能力声明 ──────────────────│
+  │                                      │
+  │──── session/new（创建会话）─────────▶│
+  │◀─── { sessionId } ─────────────────│
+  │                                      │
+  │──── session/prompt（发送提问）──────▶│
+  │◀─── session/update（流式文本块）────│
+  │◀─── session/update（流式文本块）────│
+  │◀─── 最终响应 { stopReason } ────────│
+```
+
+### 核心方法
+
+| 方法 | 用途 |
+|------|------|
+| `initialize` | 握手，交换能力声明 |
+| `session/new` | 创建新会话 |
+| `session/load` | 恢复历史会话（含完整上下文） |
+| `session/prompt` | 发送消息，接收流式响应 |
+| `session/cancel` | 中断生成 |
+| `session/set_model` | 切换模型 |
+
+### 快速开始
+
+**前置条件：** [Kiro CLI](https://kiro.dev/downloads/)（已登录）、Node.js 18+、[Rust](https://rustup.rs/)
+
+```bash
+git clone https://github.com/vokako/kiro-notebook.git
+cd kiro-notebook
+npm install
+npm run tauri dev
+```
+
+### 构建
+
+```bash
+npm run tauri build -- --bundles app
+# 产物位于 src-tauri/target/release/bundle/macos/KiroNotebook.app
+```
+
+### Python 测试脚本
+
+`temp/` 目录下有独立的 Python 脚本，可以直接测试每个 ACP 方法：
+
+```bash
+uv run temp/acp_01_new_session.py   # 创建会话 + 发送消息
+uv run temp/acp_02_load_session.py  # 恢复历史会话
+uv run temp/acp_03_set_model.py     # 切换模型
+uv run temp/acp_04_streaming.py     # 流式输出（含耗时统计）
+```
+
+这些脚本也可以作为你开发 ACP 应用的起点。
