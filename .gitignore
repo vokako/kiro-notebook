@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+target/
+
+# Build output
+dist/
+
+# Temp files
+temp/
+*.tmp
+*.swp
+*~
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Session data
+.kiro-notebook/
+
+# Tauri dev
+src-tauri/target/
