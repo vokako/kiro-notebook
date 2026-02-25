@@ -52,23 +52,27 @@ proc = subprocess.Popen(
 
 ### Protocol Flow
 
-```
-Client                              kiro-cli acp
-  │                                      │
-  │──── initialize ─────────────────────▶│
-  │◀─── capabilities ──────────────────│
-  │                                      │
-  │──── session/new ────────────────────▶│
-  │◀─── { sessionId } ─────────────────│
-  │                                      │
-  │──── session/prompt ─────────────────▶│
-  │◀─── session/update (chunk) ─────────│  streaming
-  │◀─── session/update (chunk) ─────────│  streaming
-  │◀─── session/update (turn_end) ──────│
-  │◀─── response { stopReason } ────────│
-  │                                      │
-  │──── session/cancel ─────────────────▶│  interrupt
-  │──── session/set_model ──────────────▶│  switch model
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant K as kiro-cli acp
+
+    C->>K: initialize
+    K-->>C: capabilities (loadSession, image, etc.)
+
+    C->>K: session/new { cwd }
+    K-->>C: { sessionId }
+
+    C->>K: session/prompt { sessionId, prompt }
+    K-->>C: session/update (agent_message_chunk)
+    K-->>C: session/update (agent_message_chunk)
+    K-->>C: session/update (turn_end)
+    K-->>C: response { stopReason: "end_turn" }
+
+    Note over C,K: Optional methods
+    C->>K: session/set_model { modelId }
+    C->>K: session/cancel { sessionId }
+    C->>K: session/load { sessionId, cwd }
 ```
 
 ### Key Methods
@@ -165,12 +169,12 @@ KiroNotebook is a local NotebookLM — chat with AI about your documents without
 
 ### Architecture
 
-```
-┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  React UI   │────▶│   Tauri (Rust)   │────▶│  kiro-cli acp   │
-│             │◀────│                  │◀────│  (per session)  │
-└─────────────┘     └──────────────────┘     └─────────────────┘
-   Tauri events         invoke/commands        JSON-RPC stdio
+```mermaid
+graph LR
+    A[React UI] -->|invoke| B[Tauri / Rust]
+    B -->|JSON-RPC stdio| C[kiro-cli acp<br/>per session]
+    C -->|session/update| B
+    B -->|Tauri events| A
 ```
 
 ## Getting Started
@@ -221,19 +225,27 @@ KiroNotebook 是这种方案的参考实现 — 一个本地版 NotebookLM，唯
 
 ### ACP 协议核心流程
 
-```
-客户端                               kiro-cli acp
-  │                                      │
-  │──── initialize（握手）──────────────▶│
-  │◀─── 返回能力声明 ──────────────────│
-  │                                      │
-  │──── session/new（创建会话）─────────▶│
-  │◀─── { sessionId } ─────────────────│
-  │                                      │
-  │──── session/prompt（发送提问）──────▶│
-  │◀─── session/update（流式文本块）────│
-  │◀─── session/update（流式文本块）────│
-  │◀─── 最终响应 { stopReason } ────────│
+```mermaid
+sequenceDiagram
+    participant C as 客户端
+    participant K as kiro-cli acp
+
+    C->>K: initialize（握手）
+    K-->>C: 返回能力声明
+
+    C->>K: session/new（创建会话）
+    K-->>C: { sessionId }
+
+    C->>K: session/prompt（发送提问）
+    K-->>C: session/update（流式文本块）
+    K-->>C: session/update（流式文本块）
+    K-->>C: session/update（turn_end）
+    K-->>C: 最终响应 { stopReason }
+
+    Note over C,K: 可选方法
+    C->>K: session/set_model（切换模型）
+    C->>K: session/cancel（中断生成）
+    C->>K: session/load（恢复历史会话）
 ```
 
 ### 核心方法
