@@ -6,7 +6,7 @@ target/
 dist/
 
 # Temp files
-temp/
+temp/*.tmp
 *.tmp
 *.swp
 *~
