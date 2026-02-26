@@ -159,11 +159,11 @@ Session data persists at `~/.kiro/sessions/cli/`, and logs are written to the sy
 
 ## 4. Example Project: KiroNotebook
 
-[KiroNotebook](https://github.com/vokako/kiro-notebook) is a local document chat application similar to Google NotebookLM. Users can import PDF, Word, Markdown, and other documents, then discuss the content with AI — all data stays local, nothing is uploaded to the cloud.
+[KiroNotebook](https://github.com/vokako/kiro-notebook) is a local document chat application similar to Google NotebookLM. Users can import PDF, Word, Markdown, and other documents, then discuss the content with AI.
 
 In this application, Kiro CLI handles all AI-related work: understanding user questions, analyzing document content, generating answers, and maintaining conversation context. The application itself only needs to do three things — manage ACP process lifecycles, forward JSON-RPC messages, and render streaming responses. The entire project contains no AI SDK and not a single line of code that directly calls a model API.
 
-![KiroNotebook Screenshot](kironotebook-screenshot.webp)
+<video src="screenshot_3x_720p.mp4" autoplay loop muted playsinline width="100%"></video>
 
 ```mermaid
 graph LR
@@ -187,7 +187,7 @@ This approach is particularly well-suited for:
 - **Internal tools and prototyping** — Quickly validate AI app ideas without upfront API quota and billing infrastructure
 - **Automation scripts** — Integrate AI capabilities into CI/CD pipelines or batch processing scripts
 
-Install [Kiro CLI](https://kiro.dev/downloads/), run `kiro-cli acp`, and start building your next Agent application.
+Install [Kiro CLI](https://kiro.dev/downloads/) and make it the AI engine behind your next Agent application.
 
 ## References
 

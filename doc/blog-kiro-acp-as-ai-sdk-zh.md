@@ -6,11 +6,11 @@
 
 ## 1. 背景
 
-[Kiro](https://kiro.dev/) 是 AWS 推出的 AI 编程助手，提供 IDE 插件和命令行工具两种使用方式。Kiro CLI 让开发者在终端中直接与 AI Agent 交互，完成代码编写、项目分析、任务执行等工作。
+你想给自己的应用加上 AI 能力。于是你开始调研：先要选一个模型提供商，注册账号，申请 API Key；然后比较各家 SDK，挑一个靠谱的装上；接着处理认证、Token 计费、配额限制、错误重试；最后还要自己实现流式输出。等你终于把这套管道工程搞完，可能已经过去了好几天——而你的业务逻辑一行都还没写。
 
-随着 AI 应用开发的普及，越来越多的开发者希望在自己的应用中集成类似的 Agent 能力。然而，构建 AI 应用的起步成本并不低——申请 API Key、选择 SDK、处理认证和计费、实现流式输出……这些基础设施工作往往在写下第一行业务逻辑之前就消耗了大量时间。
+**如果你只需要订阅一个 CLI 工具，就能让你的应用直接拥有完整的 AI Agent 能力呢？**
 
-为了让更多应用能够复用 Kiro 的 Agent 能力，Kiro CLI 现在实现了 [Agent Client Protocol (ACP)](https://agentclientprotocol.com/)——一个标准化 AI Agent 与客户端通信的开放协议。ACP 的设计理念类似于 [Language Server Protocol (LSP)](https://microsoft.github.io/language-server-protocol/)：LSP 让任何编辑器都能接入任何语言服务器，而 ACP 则让任何客户端都能接入任何 AI Agent。协议基于 JSON-RPC 2.0，定义了会话管理、流式输出、工具调用、模型切换等核心能力。
+这就是 [Kiro CLI](https://kiro.dev/) 现在能做到的事情。Kiro 是 AWS 推出的 AI 编程助手，提供 IDE 插件和命令行工具两种使用方式。Kiro CLI 现在实现了 [Agent Client Protocol (ACP)](https://agentclientprotocol.com/)——一个标准化 AI Agent 与客户端通信的开放协议，类似于 [Language Server Protocol (LSP)](https://microsoft.github.io/language-server-protocol/) 对语言服务器的标准化。协议基于 JSON-RPC 2.0，定义了会话管理、流式输出、工具调用、模型切换等核心能力。
 
 这意味着，任何能够启动子进程并进行 stdio 通信的应用，都可以把 Kiro CLI 当作自己的 Agent 后端——无需申请 API Key，无需安装额外的 SDK，也无需关心底层模型的调用细节。
 
@@ -159,11 +159,11 @@ const agent = spawn("kiro-cli", ["acp"], { stdio: ["pipe", "pipe", "pipe"] });
 
 ## 4. 示例项目：KiroNotebook
 
-[KiroNotebook](https://github.com/vokako/kiro-notebook) 是一个类似 Google NotebookLM 的本地文档对话应用。用户可以导入 PDF、Word、Markdown 等文档，然后与 AI 讨论文档内容——所有数据都留在本地，不会上传到云端。
+[KiroNotebook](https://github.com/vokako/kiro-notebook) 是一个类似 Google NotebookLM 的本地文档对话应用。用户可以导入 PDF、Word、Markdown 等文档，然后与 AI 讨论文档内容。
 
 在这个应用中，Kiro CLI 承担了所有 AI 相关的工作：理解用户问题、分析文档内容、生成回答、维护对话上下文。应用本身只需要做三件事——管理 ACP 进程生命周期、转发 JSON-RPC 消息、渲染流式响应。整个项目没有引入任何 AI SDK，也没有一行直接调用模型 API 的代码。
 
-![KiroNotebook Screenshot](kironotebook-screenshot.webp)
+<video src="screenshot_3x_720p.mp4" autoplay loop muted playsinline width="100%"></video>
 
 ```mermaid
 graph LR
@@ -173,21 +173,15 @@ graph LR
     B -->|Tauri events| A
 ```
 
-仓库中还提供了 [Python 参考脚本](https://github.com/vokako/kiro-notebook/tree/main/acp-python-example)，演示创建会话、恢复会话、切换模型和流式输出等核心方法，适合作为构建 ACP 客户端的起点。
+仓库中还提供了 [Python 参考脚本](https://github.com/vokako/kiro-notebook/tree/main/acp-python-example)，演示创建会话、恢复会话、切换模型和流式输出等核心 ACP 方法。其中最完整的流式对话示例不到 100 行 Python 代码——这不到 100 行已经包含了进程管理、协议握手、会话创建、流式输出和模型切换的全部逻辑，适合作为构建自己 ACP 客户端的起点。
 
 ## 5. 总结
 
-Kiro CLI 的 ACP 支持为 Agent 应用开发提供了一条新路径：将命令行工具转变为可编程的 Agent 后端，通过标准化协议暴露完整能力。开发者可以跳过 AI 基础设施的前期投入，专注于应用本身的业务逻辑和用户体验。
+Kiro CLI + ACP 为构建 Agent 应用提供了一种更快速的接入方式。不需要申请 API Key，不需要集成 SDK，不需要自己实现流式输出和工具调用——启动一个子进程，说 JSON-RPC，就能获得完整的 AI Agent 能力。从想法到可用的原型，可能只需要一个下午。
 
-这种方案特别适合以下场景：
+在成本方面，Kiro CLI 采用按月订阅的套餐模式，而非按 Token 计费。免费版每月 50 credits，Pro 版 $20/月包含 1,000 credits，即使超出配额，每个 credit 也只需 $0.04。不会出现"跑了一晚上，第二天收到天价账单"的情况——月度固定支出，成本完全可预期。详细定价请参考 [Kiro 定价页面](https://kiro.dev/pricing/)。
 
-- **本地开发工具和 CLI** — 构建代码分析、文档生成、项目脚手架等开发者工具，用户已经安装了 Kiro CLI，可以直接复用其 Agent 能力
-- **桌面应用** — 需要 AI 能力但不想管理云端 API 的本地应用，如文档助手、知识库问答、代码审查工具等
-- **编辑器和 IDE 插件** — ACP 本身就是为编辑器集成设计的，JetBrains IDEs 和 Zed 已原生支持 Kiro 作为 ACP Agent
-- **内部工具和原型验证** — 快速验证 AI 应用想法，无需前期投入 API 配额和计费基础设施
-- **自动化脚本** — 在 CI/CD 流程或批处理脚本中集成 AI 能力
-
-安装 [Kiro CLI](https://kiro.dev/downloads/)，运行 `kiro-cli acp`，开始构建你的下一个 Agent 应用。
+安装 [Kiro CLI](https://kiro.dev/downloads/)，让它成为你下一个 Agent 应用的 AI 引擎。
 
 ## 参考链接
 
