@@ -163,7 +163,7 @@ Session data persists at `~/.kiro/sessions/cli/`, and logs are written to the sy
 
 In this application, Kiro CLI handles all AI-related work: understanding user questions, analyzing document content, generating answers, and maintaining conversation context. The application itself only needs to do three things — manage ACP process lifecycles, forward JSON-RPC messages, and render streaming responses. The entire project contains no AI SDK and not a single line of code that directly calls a model API.
 
-<video src="screenshot_3x_720p.mp4" autoplay loop muted playsinline width="100%"></video>
+<video src="https://github.com/vokako/kiro-notebook/raw/main/doc/screenshot_3x_720p.mp4" autoplay loop muted playsinline width="100%"></video>
 
 ```mermaid
 graph LR

@@ -17,7 +17,7 @@
 KiroNotebook is a local NotebookLM — chat with AI about your documents without uploading anything. It uses Kiro CLI as its only AI dependency via the [Agent Client Protocol (ACP)](https://agentclientprotocol.com/).
 
 <p align="center">
-  <video src="doc/screenshot_3x_720p.mp4" autoplay loop muted playsinline width="100%"></video>
+  <video src="https://github.com/vokako/kiro-notebook/raw/main/doc/screenshot_3x_720p.mp4" autoplay loop muted playsinline width="100%"></video>
 </p>
 
 - **Three-panel layout** — File tree, document preview, AI chat
