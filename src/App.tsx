@@ -497,6 +497,19 @@ export default function App() {
                       <div className="history-item-preview">
                         {h.messages.filter((m) => m.role === "user")[0]?.content.slice(0, 60) || "No messages"}
                       </div>
+                      {h.contextFiles && h.contextFiles.length > 0 && (
+                        <div className="history-item-files">
+                          {h.contextFiles.map((f) => {
+                            const name = f.split("/").pop() || f;
+                            return (
+                              <span key={f} className="history-file-chip">
+                                <span className="file-icon">{getFileIcon(name.split(".").pop() || "")}</span>
+                                {name}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

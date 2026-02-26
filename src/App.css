@@ -171,6 +171,7 @@ body {
 }
 
 .app-title {
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-bright);
   white-space: nowrap;
@@ -768,6 +769,28 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-top: 2px;
+}
+
+.history-item-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.history-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--bg-tertiary);
+  padding: 1px 6px 1px 5px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  color: var(--text-primary);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .history-item-id {

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.png" width="128" height="128" alt="KiroNotebook">
+  <img src="doc/icon.png" width="128" height="128" alt="KiroNotebook">
 </p>
 
 <h1 align="center">KiroNotebook</h1>
@@ -15,6 +15,10 @@
 ---
 
 KiroNotebook is a local NotebookLM — chat with AI about your documents without uploading anything. It uses Kiro CLI as its only AI dependency via the [Agent Client Protocol (ACP)](https://agentclientprotocol.com/).
+
+<p align="center">
+  <img src="doc/kironotebook-screenshot.webp" alt="KiroNotebook Screenshot">
+</p>
 
 - **Three-panel layout** — File tree, document preview, AI chat
 - **Document support** — PDF, DOCX, Markdown, TXT, HTML
