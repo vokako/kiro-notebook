@@ -1,35 +1,70 @@
-# Build AI-Powered Applications Using Kiro CLI as Your AI Backend
+# Use Kiro CLI as an Agent SDK: Build Agent Apps with the ACP Protocol
 
-*Use the Agent Client Protocol to build AI apps — no API keys, no SDKs, just one CLI.*
+*No API keys, no SDK dependencies — one Kiro CLI is your Agent backend.*
 
 ---
 
-## The Problem: Building AI Apps Is Harder Than It Should Be
+## 1. Background
 
-Every AI-powered application today faces the same setup overhead: obtain API keys, pick an SDK, manage token billing, handle model versioning, and wire up streaming. Before you write a single line of business logic, you're deep in infrastructure plumbing.
+[Kiro](https://kiro.dev/) is an AI coding assistant from AWS, available as both an IDE plugin and a command-line tool. Kiro CLI lets developers interact with an AI Agent directly from the terminal — writing code, analyzing projects, and executing tasks without leaving the command line.
 
-What if you could skip all of that and talk to a fully-featured AI agent through a simple subprocess?
+As AI application development becomes more widespread, more developers want to integrate similar Agent capabilities into their own applications. However, the startup cost of building an AI app is not trivial — obtaining API keys, choosing an SDK, handling authentication and billing, implementing streaming output... These infrastructure tasks often consume significant time before a single line of business logic is written.
 
-## Introducing ACP Support in Kiro CLI
+To lower this barrier, Kiro CLI now implements the [Agent Client Protocol (ACP)](https://agentclientprotocol.com/) — an open protocol that standardizes communication between AI Agents and clients. ACP's design philosophy is similar to the [Language Server Protocol (LSP)](https://microsoft.github.io/language-server-protocol/): LSP lets any editor connect to any language server, while ACP lets any client connect to any AI Agent. Built on JSON-RPC 2.0, the protocol defines core capabilities including session management, streaming output, tool invocation, and model switching.
 
-Kiro CLI now implements the [Agent Client Protocol (ACP)](https://agentclientprotocol.com/) — an open standard that defines how clients communicate with AI agents over JSON-RPC 2.0.
+This means any application that can spawn a subprocess and communicate via stdio can use Kiro CLI as its Agent backend — no API keys, no additional SDKs, and no need to worry about the underlying model details.
 
-ACP was designed to standardize agent-editor communication, much like the [Language Server Protocol (LSP)](https://microsoft.github.io/language-server-protocol/) did for language servers. But the protocol isn't limited to editors — any application that can spawn a process and read/write stdio can be an ACP client.
+## 2. Core Idea: From Calling APIs to Talking to an Agent
 
-This means Kiro CLI can serve as a general-purpose AI backend for:
+Kiro CLI's ACP support offers a fundamentally different approach from traditional SDK integration: your application no longer calls model APIs directly, but instead communicates with a locally running Agent process. That process is `kiro-cli acp`, which encapsulates all the complexity of model interaction — your application just speaks JSON-RPC.
 
-- Desktop applications
-- CLI tools and automation scripts
-- Editor plugins (JetBrains, Zed, and more)
-- Custom workflows in any programming language
+```mermaid
+graph LR
+    A[Your App] -->|JSON-RPC over stdio| B[kiro-cli acp]
+    B -->|Auth / Requests / Streaming| C[AI Model]
+    B -->|Tool Calls| D[File System / Terminal / MCP]
+```
 
-No API keys. No SDK dependencies. No token management. Just `kiro-cli acp`.
+This architecture brings several key advantages:
 
-## How It Works
+- **Zero-config integration**: Kiro CLI handles authentication — your app doesn't need to manage any credentials
+- **Language-agnostic**: Any language that can spawn a subprocess can be a client
+- **Full capabilities**: You get a complete AI Agent with tool invocation, context management, and session persistence
+- **Separation of concerns**: AI interaction complexity is encapsulated in the Agent process — your app code focuses on business logic
 
-ACP uses JSON-RPC 2.0 over stdio. Your application spawns `kiro-cli acp` as a child process, sends JSON requests to stdin, and reads JSON responses from stdout. Streaming is built in — the agent sends incremental updates as notifications before the final response.
+## 3. Build an ACP App in Five Steps
 
-### Spawning the Agent
+Let's walk through the complete flow of integrating Kiro CLI into your application.
+
+```mermaid
+sequenceDiagram
+    participant C as Your App
+    participant K as kiro-cli acp
+
+    Note over C,K: Step 1: Start Agent Process
+    C->>K: spawn("kiro-cli", ["acp"])
+
+    Note over C,K: Step 2: Initialize Handshake
+    C->>K: initialize
+    K-->>C: Return capabilities
+
+    Note over C,K: Step 3: Create or Restore Session
+    C->>K: session/new or session/load
+    K-->>C: { sessionId }
+
+    Note over C,K: Step 4: Conversation
+    C->>K: session/prompt { sessionId, prompt }
+    K-->>C: session/update (streaming chunks)
+    K-->>C: session/update (turn_end)
+    K-->>C: response
+
+    Note over C,K: Step 5: Enhanced Capabilities (Optional)
+    C->>K: session/set_model / cancel
+```
+
+### 3.1 Start the Agent Process
+
+Everything begins with spawning the `kiro-cli acp` subprocess. The prerequisite is that the user has [installed and signed in to Kiro CLI](https://kiro.dev/downloads/). Your application creates this process and establishes stdin/stdout communication channels. Use the `--agent` parameter to specify a particular Agent configuration if needed:
 
 ```rust
 // Rust
@@ -55,33 +90,9 @@ const { spawn } = require("child_process");
 const agent = spawn("kiro-cli", ["acp"], { stdio: ["pipe", "pipe", "pipe"] });
 ```
 
-### Protocol Flow
+### 3.2 Initialize Handshake
 
-The lifecycle is straightforward:
-
-```
-Client                          kiro-cli acp
-  │                                  │
-  │─── initialize ──────────────────>│
-  │<── capabilities ─────────────────│
-  │                                  │
-  │─── session/new ─────────────────>│
-  │<── { sessionId } ───────────────│
-  │                                  │
-  │─── session/prompt ──────────────>│
-  │<── session/update (chunk) ──────│  ← streaming
-  │<── session/update (chunk) ──────│
-  │<── session/update (turn_end) ───│
-  │<── response ────────────────────│
-  │                                  │
-  │─── session/set_model ───────────>│  ← optional
-  │─── session/cancel ──────────────>│  ← optional
-  │─── session/load ────────────────>│  ← restore session
-```
-
-### Key Methods
-
-**Initialize** — Handshake to exchange capabilities:
+After the process starts, send an `initialize` request to complete the handshake. Both sides exchange capability declarations — the client tells the Agent what features it supports, and the Agent returns its capabilities (such as session restoration, image input, etc.):
 
 ```json
 {"jsonrpc":"2.0","id":0,"method":"initialize","params":{
@@ -91,7 +102,9 @@ Client                          kiro-cli acp
 }}
 ```
 
-**Create Session** — Start a new conversation:
+### 3.3 Create or Restore a Session
+
+Create a new session with `session/new`, or restore a previous one with `session/load`. Each session has a unique `sessionId`, and all subsequent interactions happen within that context. `cwd` specifies the Agent's working directory, and `mcpServers` allows passing in MCP servers to extend tool capabilities:
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"session/new","params":{
@@ -100,27 +113,7 @@ Client                          kiro-cli acp
 }}
 ```
 
-**Send Prompt** — Ask a question and receive streaming responses:
-
-```json
-{"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{
-  "sessionId":"uuid-here",
-  "prompt":[{"type":"text","text":"Explain this code"}]
-}}
-```
-
-**Switch Model** — Change models mid-session:
-
-```json
-{"jsonrpc":"2.0","id":3,"method":"session/set_model","params":{
-  "sessionId":"uuid-here",
-  "modelId":"claude-sonnet-4"
-}}
-```
-
-Available models include `auto`, `claude-sonnet-4`, `claude-sonnet-4.5`, `claude-sonnet-4.6`, `claude-opus-4.5`, `claude-opus-4.6`, and `claude-haiku-4.5`.
-
-**Load Session** — Sessions persist at `~/.kiro/sessions/cli/` and can be restored in a new process:
+Restore an existing session (session data persists at `~/.kiro/sessions/cli/`):
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"session/load","params":{
@@ -129,90 +122,72 @@ Available models include `auto`, `claude-sonnet-4`, `claude-sonnet-4.5`, `claude
 }}
 ```
 
-## What You Get for Free
+### 3.4 Conversation
 
-By using Kiro CLI as your AI backend, your application inherits:
+Send messages with `session/prompt`. ACP natively supports streaming — the Agent continuously sends `session/update` notifications during generation, which the client can render in real time. The Agent may also invoke tools to complete tasks, with the protocol providing `ToolCall` updates for the client to track execution progress:
 
-| Capability | Description |
-|---|---|
-| Streaming | Real-time token-by-token responses via session updates |
-| Tool use | The agent can invoke tools (file operations, terminal, etc.) |
-| Session persistence | Save and restore conversations across process restarts |
-| Model switching | Change models on the fly without reconnecting |
-| MCP integration | Pass MCP servers to sessions for extended tool capabilities |
-| Cancellation | Interrupt generation mid-stream |
-
-All of this comes from the protocol — your application just needs to handle JSON-RPC messages.
-
-## Example: KiroNotebook
-
-To demonstrate this approach, we built [KiroNotebook](https://github.com/vokako/kiro-notebook) — a local NotebookLM-style application where you can chat with AI about your documents without uploading anything to the cloud.
-
-### What It Does
-
-- **Three-panel layout** — File tree, document preview, and AI chat side by side
-- **Document support** — PDF, DOCX, Markdown, TXT, HTML
-- **Per-session processes** — Each chat tab spawns its own `kiro-cli acp` instance
-- **Context tracking** — Files sent to the agent are marked with ✓; new files are queued until the next message
-- **Session persistence** — Close and reopen with full conversation context restored
-- **Streaming with cancellation** — Real-time responses that can be interrupted
-
-### Architecture
-
-```
-┌─────────────┐      ┌──────────────┐      ┌─────────────────┐
-│   React UI  │─────>│ Tauri / Rust │─────>│  kiro-cli acp   │
-│             │<─────│              │<─────│  (per session)   │
-└─────────────┘      └──────────────┘      └─────────────────┘
-    Tauri events        JSON-RPC stdio
+```json
+{"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{
+  "sessionId":"uuid-here",
+  "prompt":[{"type":"text","text":"Explain this code"}]
+}}
 ```
 
-The Rust backend manages ACP process lifecycles — spawning, message routing, and cleanup. The React frontend handles rendering and user interaction. The entire AI capability comes from Kiro CLI; there are no other AI dependencies.
+### 3.5 Enhanced Capabilities (Optional)
 
-### Try It
+Selectively integrate enhanced capabilities based on your application's needs:
 
-```bash
-# Prerequisites: Kiro CLI (authenticated), Node.js 18+, Rust
-git clone https://github.com/vokako/kiro-notebook.git
-cd kiro-notebook
-npm install
-npm run tauri dev
+**Model switching** — Dynamically change models mid-session (supports `auto`, `claude-sonnet-4`, `claude-opus-4.5`, etc.):
+
+```json
+{"jsonrpc":"2.0","id":3,"method":"session/set_model","params":{
+  "sessionId":"uuid-here","modelId":"claude-sonnet-4"
+}}
 ```
 
-### Python Examples
+**Cancel generation** — Interrupt an in-progress generation at any time:
 
-The repository also includes standalone Python scripts for testing each ACP method:
-
-```bash
-uv run acp-python-example/acp_01_new_session.py   # Create session + prompt
-uv run acp-python-example/acp_02_load_session.py   # Load previous session
-uv run acp-python-example/acp_03_set_model.py      # Switch model
-uv run acp-python-example/acp_04_streaming.py      # Streaming with timing
+```json
+{"jsonrpc":"2.0","id":99,"method":"session/cancel","params":{
+  "sessionId":"uuid-here"
+}}
 ```
 
-These scripts serve as minimal reference implementations — useful starting points for building your own ACP client in Python.
+Kiro CLI also provides extension capabilities (prefixed with `_kiro.dev/`), including slash command execution, MCP server event notifications, and context compaction status. These extensions are optional — clients that don't support them can safely ignore them.
 
-## Getting Started with Your Own App
+Session data persists at `~/.kiro/sessions/cli/`, and logs are written to the system temp directory (on macOS: `$TMPDIR/kiro-log/`), making debugging straightforward. For more protocol details, see the [Kiro CLI ACP documentation](https://kiro.dev/docs/cli/acp/).
 
-Building an ACP client is straightforward in any language:
+## 4. Example Project: KiroNotebook
 
-1. **Spawn** `kiro-cli acp` as a child process
-2. **Send** `initialize` to handshake
-3. **Create** a session with `session/new`
-4. **Prompt** with `session/prompt` and handle streaming updates
-5. **Optionally** switch models, cancel generation, or persist sessions
+[KiroNotebook](https://github.com/vokako/kiro-notebook) is a local document chat application similar to Google NotebookLM. Users can import PDF, Word, Markdown, and other documents, then discuss the content with AI — all data stays local, nothing is uploaded to the cloud.
 
-The full ACP specification is available at [agentclientprotocol.com](https://agentclientprotocol.com/), and Kiro's implementation details are documented at [kiro.dev/docs/cli/acp](https://kiro.dev/docs/cli/acp/).
+In this application, Kiro CLI handles all AI-related work: understanding user questions, analyzing document content, generating answers, and maintaining conversation context. The application itself only needs to do three things — manage ACP process lifecycles, forward JSON-RPC messages, and render streaming responses. The entire project contains no AI SDK and not a single line of code that directly calls a model API.
 
-## Conclusion
+```mermaid
+graph LR
+    A[React UI] -->|Tauri invoke| B[Rust Backend]
+    B -->|JSON-RPC stdio| C[kiro-cli acp<br/>independent process per session]
+    C -->|session/update| B
+    B -->|Tauri events| A
+```
 
-Kiro CLI's ACP support turns a CLI tool into a programmable AI backend. Instead of integrating SDKs and managing credentials, you spawn a process and speak JSON-RPC. This works for quick prototypes, production desktop apps, editor plugins, or anything in between.
+The repository also includes [Python reference scripts](https://github.com/vokako/kiro-notebook/tree/main/acp-python-example) demonstrating core ACP methods — creating sessions, restoring sessions, switching models, and streaming output — suitable as a starting point for building your own ACP client.
 
-KiroNotebook shows what's possible — a full-featured document chat application with zero AI infrastructure code. The same pattern applies to whatever you want to build.
+## 5. Summary
 
-Give it a try: install [Kiro CLI](https://kiro.dev/downloads/), run `kiro-cli acp`, and start building.
+Kiro CLI's ACP support offers a new path for Agent application development: turning a command-line tool into a programmable Agent backend that exposes full capabilities through a standardized protocol. Developers can skip the upfront investment in AI infrastructure and focus on business logic and user experience.
 
-## Resources
+This approach is particularly well-suited for:
+
+- **Local dev tools and CLIs** — Build code analysis, doc generation, and scaffolding tools that reuse Kiro CLI's Agent capabilities
+- **Desktop applications** — Local apps that need AI without managing cloud APIs, such as document assistants, knowledge base Q&A, and code review tools
+- **Editor and IDE plugins** — ACP is designed for editor integration; JetBrains IDEs and Zed already natively support Kiro as an ACP Agent
+- **Internal tools and prototyping** — Quickly validate AI app ideas without upfront API quota and billing infrastructure
+- **Automation scripts** — Integrate AI capabilities into CI/CD pipelines or batch processing scripts
+
+Install [Kiro CLI](https://kiro.dev/downloads/), run `kiro-cli acp`, and start building your next Agent application.
+
+## References
 
 - [Kiro CLI ACP Documentation](https://kiro.dev/docs/cli/acp/)
 - [Agent Client Protocol Specification](https://agentclientprotocol.com/)

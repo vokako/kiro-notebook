@@ -1,6 +1,6 @@
 # 把 Kiro CLI 当作 Agent SDK：用 ACP 协议构建 Agent 应用
 
-*无需 API Key，无需 SDK 依赖，一个 CLI 就是你的 Agent 后端。*
+*无需 API Key，无需 SDK 依赖，一个 Kiro CLI 就是你的 Agent 后端。*
 
 ---
 

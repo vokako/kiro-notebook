@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="doc/acp-guide-zh.md">中文文档</a>
+  <a href="doc/blog-kiro-acp-as-ai-sdk.md">Blog (EN)</a> · <a href="doc/blog-kiro-acp-as-ai-sdk-zh.md">Blog (中文)</a> · <a href="doc/acp-guide-zh.md">中文文档</a>
 </p>
 
 ---
