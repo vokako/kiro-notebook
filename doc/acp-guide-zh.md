@@ -135,13 +135,13 @@ sequenceDiagram
 
 ## Python 测试脚本
 
-`temp/` 目录下有独立的 Python 脚本，可以直接测试每个 ACP 方法：
+`acp-python-example/` 目录下有独立的 Python 脚本，可以直接测试每个 ACP 方法：
 
 ```bash
-uv run temp/acp_01_new_session.py   # 创建会话 + 发送消息
-uv run temp/acp_02_load_session.py  # 恢复历史会话
-uv run temp/acp_03_set_model.py     # 切换模型
-uv run temp/acp_04_streaming.py     # 流式输出（含耗时统计）
+uv run acp-python-example/acp_01_new_session.py   # 创建会话 + 发送消息
+uv run acp-python-example/acp_02_load_session.py  # 恢复历史会话
+uv run acp-python-example/acp_03_set_model.py     # 切换模型
+uv run acp-python-example/acp_04_streaming.py     # 流式输出（含耗时统计）
 ```
 
 这些脚本也可以作为你开发 ACP 应用的起点。

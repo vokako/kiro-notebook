@@ -129,10 +129,10 @@ Available: `auto`, `claude-sonnet-4.6`, `claude-opus-4.6`, `claude-sonnet-4.5`, 
 Standalone scripts for testing each ACP method — useful as reference implementations:
 
 ```bash
-uv run temp/acp_01_new_session.py   # Create session + prompt
-uv run temp/acp_02_load_session.py  # Load previous session
-uv run temp/acp_03_set_model.py     # Switch model
-uv run temp/acp_04_streaming.py     # Streaming with timing
+uv run acp-python-example/acp_01_new_session.py   # Create session + prompt
+uv run acp-python-example/acp_02_load_session.py  # Load previous session
+uv run acp-python-example/acp_03_set_model.py     # Switch model
+uv run acp-python-example/acp_04_streaming.py     # Streaming with timing
 ```
 
 ## Further Reading
