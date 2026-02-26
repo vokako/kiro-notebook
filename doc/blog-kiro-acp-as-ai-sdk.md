@@ -6,11 +6,11 @@
 
 ## 1. Background
 
-[Kiro](https://kiro.dev/) is an AI coding assistant from AWS, available as both an IDE plugin and a command-line tool. Kiro CLI lets developers interact with an AI Agent directly from the terminal — writing code, analyzing projects, and executing tasks without leaving the command line.
+You want to add AI capabilities to your application. So you start researching: first, pick a model provider, sign up, and get an API key. Then compare SDKs, install one that looks reliable. Next, handle authentication, token billing, quota limits, and error retries. Finally, implement streaming output yourself. By the time you finish all this plumbing, days may have passed — and you haven't written a single line of business logic.
 
-As AI application development becomes more widespread, more developers want to integrate similar Agent capabilities into their own applications. However, the startup cost of building an AI app is not trivial — obtaining API keys, choosing an SDK, handling authentication and billing, implementing streaming output... These infrastructure tasks often consume significant time before a single line of business logic is written.
+**What if you could just subscribe to one CLI tool and give your application full AI Agent capabilities?**
 
-To lower this barrier, Kiro CLI now implements the [Agent Client Protocol (ACP)](https://agentclientprotocol.com/) — an open protocol that standardizes communication between AI Agents and clients. ACP's design philosophy is similar to the [Language Server Protocol (LSP)](https://microsoft.github.io/language-server-protocol/): LSP lets any editor connect to any language server, while ACP lets any client connect to any AI Agent. Built on JSON-RPC 2.0, the protocol defines core capabilities including session management, streaming output, tool invocation, and model switching.
+That's exactly what [Kiro CLI](https://kiro.dev/) can do now. Kiro is an AI coding assistant from AWS, available as both an IDE plugin and a command-line tool. Kiro CLI now implements the [Agent Client Protocol (ACP)](https://agentclientprotocol.com/) — an open protocol that standardizes AI Agent-client communication, similar to how the [Language Server Protocol (LSP)](https://microsoft.github.io/language-server-protocol/) standardized language servers. Built on JSON-RPC 2.0, the protocol defines core capabilities including session management, streaming output, tool invocation, and model switching.
 
 This means any application that can spawn a subprocess and communicate via stdio can use Kiro CLI as its Agent backend — no API keys, no additional SDKs, and no need to worry about the underlying model details.
 
@@ -173,19 +173,13 @@ graph LR
     B -->|Tauri events| A
 ```
 
-The repository also includes [Python reference scripts](https://github.com/vokako/kiro-notebook/tree/main/acp-python-example) demonstrating core ACP methods — creating sessions, restoring sessions, switching models, and streaming output — suitable as a starting point for building your own ACP client.
+The repository also includes [Python reference scripts](https://github.com/vokako/kiro-notebook/tree/main/acp-python-example) demonstrating core ACP methods — creating sessions, restoring sessions, switching models, and streaming output. The most complete streaming example is under 100 lines of Python — those 100 lines cover process management, protocol handshake, session creation, streaming output, and model switching, making them a great starting point for building your own ACP client.
 
 ## 5. Summary
 
-Kiro CLI's ACP support offers a new path for Agent application development: turning a command-line tool into a programmable Agent backend that exposes full capabilities through a standardized protocol. Developers can skip the upfront investment in AI infrastructure and focus on business logic and user experience.
+Kiro CLI + ACP provides a faster way to integrate Agent capabilities into your applications. No API keys to obtain, no SDKs to integrate, no streaming or tool invocation to implement yourself — spawn a subprocess, speak JSON-RPC, and you get full AI Agent capabilities. From idea to working prototype, it might only take an afternoon.
 
-This approach is particularly well-suited for:
-
-- **Local dev tools and CLIs** — Build code analysis, doc generation, and scaffolding tools that reuse Kiro CLI's Agent capabilities
-- **Desktop applications** — Local apps that need AI without managing cloud APIs, such as document assistants, knowledge base Q&A, and code review tools
-- **Editor and IDE plugins** — ACP is designed for editor integration; JetBrains IDEs and Zed already natively support Kiro as an ACP Agent
-- **Internal tools and prototyping** — Quickly validate AI app ideas without upfront API quota and billing infrastructure
-- **Automation scripts** — Integrate AI capabilities into CI/CD pipelines or batch processing scripts
+On the cost side, Kiro CLI uses a monthly subscription model rather than per-token billing. The free tier includes 50 credits per month, Pro is $20/month with 1,000 credits, and even overage is just $0.04 per credit. No risk of "running overnight and waking up to a massive bill" — monthly fixed costs, fully predictable. See the [Kiro pricing page](https://kiro.dev/pricing/) for details.
 
 Install [Kiro CLI](https://kiro.dev/downloads/) and make it the AI engine behind your next Agent application.
 
