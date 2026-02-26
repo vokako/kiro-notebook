@@ -163,6 +163,8 @@ const agent = spawn("kiro-cli", ["acp"], { stdio: ["pipe", "pipe", "pipe"] });
 
 在这个应用中，Kiro CLI 承担了所有 AI 相关的工作：理解用户问题、分析文档内容、生成回答、维护对话上下文。应用本身只需要做三件事——管理 ACP 进程生命周期、转发 JSON-RPC 消息、渲染流式响应。整个项目没有引入任何 AI SDK，也没有一行直接调用模型 API 的代码。
 
+![KiroNotebook Screenshot](kironotebook-screenshot.webp)
+
 ```mermaid
 graph LR
     A[React UI] -->|Tauri invoke| B[Rust 后端]
